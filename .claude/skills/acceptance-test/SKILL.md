@@ -41,7 +41,8 @@ argument-hint: <티켓 ID> [테스트로 옮길 규칙]
   작성 세부 규칙은 `docs/test-guide.md`를 참고한다.
 - `acceptance-criteria.md`에 없는 새로운 경계값이나 케이스를 이 단계에서 만들어 끼워 넣지 않는다.
   필요하다고 판단되면 먼저 `acceptance-criteria.md`에 규칙으로 추가할지, `docs/tickets.md`에
-  티켓으로 남길지 사용자에게 묻는다 — 조용히 추가하지 않는다.
+  티켓으로 남길지 사용자에게 묻는다 — 조용히 추가하지 않는다. 티켓 형식은 `docs/plan.md`의
+  "새 티켓 남기기"를 따른다.
 
 ## 3. 테스트 코드 작성
 
