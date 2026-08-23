@@ -2,7 +2,10 @@
 
 ## 테스트 클린업
 
-`@BeforeEach` 시점에 `deleteAll()`로 격리한다.
+격리: 실제 서버로 호출하므로 상태가 남는다. 테스트는 자기 데이터를 따로 잡거나 `@Sql`로
+초기화한다.
+
+기본은 `@BeforeEach` 시점에 `deleteAll()`로 격리한다.
 
 ```java
 @BeforeEach
@@ -13,6 +16,25 @@ void setUp(TestInfo testInfo) {
 ```
 
 `deleteAll()` 이후 INFO 로그를 찍어 setUp 쿼리와 테스트 본문 쿼리를 로그에서 시각적으로 구분한다.
+
+**`deleteAll()`을 쓸 수 없을 때(FK로 참조되는 시드 테이블 등)는 자기 데이터 영역 + `@Sql`로
+초기화한다.** 테이블에 시드 row가 있고 다른 테이블이 그 시드를 FK로 참조하면 `deleteAll()`이
+제약 위반으로 실패한다. 이때 테스트는 시드가 쓰지 않는 자기만의 id 범위(예: `id >= 1000`)에
+데이터를 만들고, 클래스에 `@Sql` 두 개로 그 범위를 초기화/정리한다. SQL은 인라인 문자열이
+아니라 `src/test/resources/sql/*.sql` 파일로 분리해 클래스패스에서 참조한다:
+
+```java
+@Sql(scripts = "classpath:sql/reset-product-identity-sequence.sql",
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "classpath:sql/delete-test-products.sql",
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
+class ProductUpdateAcceptanceTest { ... }
+```
+
+H2 `GenerationType.IDENTITY`는 `data.sql`이 명시적으로 넣어 둔 id를 인식하지 못해, 그 범위와
+겹치는 새 생성 요청이 충돌할 수 있다(확인됨). `BEFORE_TEST_METHOD`에서 시퀀스를 자기 데이터
+영역의 시작값으로 매번 되돌리고, `AFTER_TEST_METHOD`에서 그 영역을 지워 다음 테스트가 항상
+같은 조건에서 시작하게 한다.
 
 
 ## 테스트 네이밍

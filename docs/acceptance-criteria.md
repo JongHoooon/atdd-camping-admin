@@ -9,9 +9,9 @@
        수정하든 그 값이 DB에 저장되어야 한다.
 이유   상품의 재고·가격은 판매/대여 가능 여부 판정(ProductService.decreaseStock)과 결제 금액 산정(SalesService)의 기준이 되므로, 관리자가 수정한 값이 DB에 반영되지 않으면 판매·대여가 실제와 다른 값을 기준으로 처리된다.
 
-Given  상품 id=1(랜턴), stockQuantity=20, price=30000, productType=RENTAL (data.sql 시드)
+Given  테스트랜턴 상품(name=테스트랜턴, stockQuantity=20, price=30000, productType=RENTAL)
 When   재고를 99로 수정         Then  응답엔 반영되나 재조회 시 (버그) 재고 20(그대로) → 기대 99
-When   이름을 "새랜턴"으로 수정   Then  응답엔 반영되나 재조회 시 (버그) 이름 "랜턴"(그대로) → 기대 "새랜턴"
+When   이름을 "새랜턴"으로 수정   Then  응답엔 반영되나 재조회 시 (버그) 이름 "테스트랜턴"(그대로) → 기대 "새랜턴"
 When   가격을 45000으로 수정     Then  응답엔 반영되나 재조회 시 (버그) 가격 30000(그대로) → 기대 45000
 When   유형을 SALE로 수정       Then  응답엔 반영되나 재조회 시 (버그) 유형 RENTAL(그대로) → 기대 SALE
 

@@ -123,6 +123,23 @@ class <요구사항 주제를 서술하는 영문 이름>AcceptanceTest {
 - 공유 베이스 테스트 클래스를 새로 만들지 않는다. 이 저장소가 의도적으로 중복을 허용하는
   스타일인지는 `CLAUDE.md`를 확인한다. `docs/test-guide.md`의 클린업 패턴을 클래스마다 그대로
   반복한다.
+- **`data.sql` 시드 row를 그대로 수정/재사용하지 않는다.** 테스트에 필요한 데이터는 해당 리소스의
+  생성 엔드포인트로 직접 만든다. 시드 row를 재사용하면 테스트끼리 같은 row를 공유해 순서
+  의존성이 생기고, `acceptance-criteria.md`의 `Given`도 시드 값을 쓰지 않는 쪽으로 이미 맞춰져
+  있다(`.claude/skills/acceptance-criteria/SKILL.md` 참고). 시드 row 자체가 검증 대상인
+  티켓(예: 시드 데이터 무결성 버그)만 예외다.
+- 시드가 있는 테이블은 생성 시 두 가지를 미리 확인한다: (1) 다른 테이블이 FK로 참조하고 있으면
+  `deleteAll()`이 제약 위반으로 실패할 수 있다. (2) `data.sql`이 명시적 `id`로 미리 넣어 둔
+  값과 JPA `GenerationType.IDENTITY` 시퀀스가 동기화되지 않아, 새로 만드는 첫 몇 건의 생성
+  요청이 시드 id와 충돌해 실패할 수 있다(H2 확인됨).
+  `deleteAll()`을 쓸 수 없으면 `docs/test-guide.md`의 "테스트 클린업" 절을 따른다: 테스트는
+  시드가 쓰지 않는 자기만의 id 범위(예: `id >= 1000`)에 데이터를 만들고, 클래스에 `@Sql`
+  두 개를 붙여 그 범위를 초기화/정리한다 — `BEFORE_TEST_METHOD`에서 시퀀스를 그 범위의
+  시작값으로 되돌리고, `AFTER_TEST_METHOD`에서 그 범위를 지운다. SQL은 인라인 문자열이 아니라
+  `src/test/resources/sql/*.sql` 파일로 분리해 `classpath:sql/...`로 참조한다(예:
+  `src/test/java/com/camping/admin/acceptance/ProductUpdateAcceptanceTest.java`와
+  `src/test/resources/sql/reset-product-identity-sequence.sql`,
+  `src/test/resources/sql/delete-test-products.sql` 참고).
 
 ## 4. 실행 및 판정 — "넘어가기 전에" 확인
 
