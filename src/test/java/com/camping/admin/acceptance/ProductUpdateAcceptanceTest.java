@@ -76,7 +76,7 @@ class ProductUpdateAcceptanceTest {
     }
 
     @Nested
-    @DisplayName("T-1: PUT /admin/products/{id} 요청으로 name, stockQuantity, price, productType 중 어느 필드를 수정하든 그 값이 DB에 저장되어야 한다")
+    @DisplayName("T-1: 상품 정보를 수정하면(이름·재고·가격·유형 중 무엇을 바꾸든) 그 값이 저장되어야 한다")
     class T1_상품_수정_필드값이_DB에_저장되어야_한다 {
 
         @Nested
@@ -187,6 +187,38 @@ class ProductUpdateAcceptanceTest {
                         .extract().jsonPath().getString("find { it.id == %d }.productType".formatted(productId));
 
                 assertThat(reloadedProductType).isEqualTo("SALE");
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("T-1: 상품 정보 중 일부만 수정하면, 요청에 없는 필드는 원래 값 그대로 유지되어야 한다")
+    class T1_부분_수정_시_요청에_없는_필드는_그대로_유지되어야_한다 {
+
+        @Nested
+        @DisplayName("상품 수정")
+        class 상품_수정 {
+
+            @Test
+            @DisplayName("이름만 수정하면 재고와 가격은 그대로 유지된다")
+            void 이름만_수정하면_재고와_가격은_그대로_유지된다() {
+                Long productId = createProduct("테스트랜턴", 20, 30000, "RENTAL");
+
+                var response = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "name": "새랜턴"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .extract();
+
+                assertThat(response.jsonPath().getInt("stockQuantity")).isEqualTo(20);
+                assertThat(response.jsonPath().getFloat("price")).isEqualTo(30000f);
+                assertThat(response.jsonPath().getString("productType")).isEqualTo("RENTAL");
             }
         }
     }
