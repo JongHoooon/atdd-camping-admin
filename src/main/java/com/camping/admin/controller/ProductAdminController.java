@@ -150,6 +150,7 @@ public class ProductAdminController {
             }
         }
 
-        return ResponseEntity.ok(product);
+        Product saved = productRepository.save(product);
+        return ResponseEntity.ok(saved);
     }
 }

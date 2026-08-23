@@ -97,6 +97,7 @@ public class ConsoleProductController {
             } catch (Exception ignore) {}
         }
 
+        productRepository.save(product);
         redirectAttributes.addFlashAttribute("success", "상품이 수정되었습니다.");
         return "redirect:/console/products";
     }
