@@ -46,7 +46,6 @@
 ## 이 저장소의 실행 방법
 
 - 서버 기동: `./gradlew bootRun`, 8080 포트. 8080이 쓰이면 `SERVER_PORT=8081 ./gradlew bootRun`
-- 호출할 수 있는 것은 `/api` 아래에 있다
 - 테스트 실행: `./gradlew test`. 결과 줄이 안 보이면 캐시다. `./gradlew test --rerun-tasks`로 다시 돌린다
 - 데이터를 다루기 전에 `src/main/resources/data.sql`을 읽는다
 
