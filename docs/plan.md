@@ -46,7 +46,11 @@
 ## 이 저장소의 실행 방법
 
 - 서버 기동: `./gradlew bootRun`, 8080 포트. 8080이 쓰이면 `SERVER_PORT=8081 ./gradlew bootRun`
-- 테스트 실행: `./gradlew test`. 결과 줄이 안 보이면 캐시다. `./gradlew test --rerun-tasks`로 다시 돌린다
+- 테스트 실행(전체 스위트): `./gradlew test`. 결과 줄이 안 보이면 캐시다. `./gradlew test --rerun-tasks`로 다시 돌린다.
+  그래도 결과를 못 읽으면 통과로 치지 않고 멈춘다(`principles.md` "확인이 안 되면 통과가 아니다")
+- 테스트 실행(특정 클래스만): `./gradlew test --tests "<패키지>.<파일명>"`
+  (예: `./gradlew test --tests "com.camping.admin.acceptance.ProductUpdateAcceptanceTest"`). 결과
+  줄이 안 보이면 마찬가지로 `--rerun-tasks`를 붙인다
 - 데이터를 다루기 전에 `src/main/resources/data.sql`을 읽는다
 
 테스트를 어떻게 짤지는 이 파일에 적지 않는다. 무엇을 단언하고 어떻게 격리할지는
