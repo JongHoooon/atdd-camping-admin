@@ -1,5 +1,35 @@
 # Acceptance Test Guide
 
+## 인증 관문 통과
+
+`JwtAuthFilter`가 로그인/정적 자원 등 일부 경로를 뺀 전역(`/*`)에 걸려 있어, `/admin/**`
+호출은 토큰 없이 보내면 401을 받는다(확인됨). `@BeforeEach`에서 `/auth/login`으로 로그인해
+토큰을 받아 두고, 이후 모든 요청에 `Authorization: Bearer` 헤더로 붙인다.
+
+```java
+@BeforeEach
+void setUp(TestInfo testInfo) {
+    RestAssured.port = port;
+
+    accessToken = given()
+            .contentType(ContentType.JSON)
+            .body("""
+                    {
+                      "username": "admin",
+                      "password": "admin123"
+                    }
+                    """)
+            .when().post("/auth/login")
+            .then().statusCode(200)
+            .extract().path("accessToken");
+}
+```
+
+로그인 계정(`admin`/`admin123`)은 `application.yml`의 `admin.username`/`admin.password`다.
+매 요청마다 `.header("Authorization", "Bearer " + accessToken)`을 반복해서 붙인다 — 공유
+헬퍼로 감싸지 않는다(`CLAUDE.md`가 지목한 이 저장소의 중복 허용 스타일과 같은 이유).
+
+
 ## 테스트 클린업
 
 격리: 실제 서버로 호출하므로 상태가 남는다. 테스트는 자기 데이터를 따로 잡거나 `@Sql`로
