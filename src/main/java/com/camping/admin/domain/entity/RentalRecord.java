@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -28,16 +29,20 @@ public class RentalRecord {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(name = "total_price", nullable = false)
+    private BigDecimal totalPrice;
+
     @Column(name = "is_returned", nullable = false)
     private Boolean isReturned = false;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public RentalRecord(Reservation reservation, Product product, Integer quantity) {
+    public RentalRecord(Reservation reservation, Product product, Integer quantity, BigDecimal totalPrice) {
         this.reservation = reservation;
         this.product = product;
         this.quantity = quantity;
+        this.totalPrice = totalPrice;
         this.isReturned = false;
         this.createdAt = LocalDateTime.now();
     }

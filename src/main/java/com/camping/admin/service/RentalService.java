@@ -8,6 +8,7 @@ import com.camping.admin.dto.RentalResponse;
 import com.camping.admin.repository.ProductRepository;
 import com.camping.admin.repository.RentalRecordRepository;
 import com.camping.admin.repository.ReservationRepository;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,8 @@ public class RentalService {
                     .orElseThrow(() -> new IllegalArgumentException("Cannot find reservation with id: " + reservationId));
         }
 
-        RentalRecord rentalRecord = new RentalRecord(reservation, product, quantity);
+        BigDecimal totalPrice = product.getPrice().multiply(new BigDecimal(quantity));
+        RentalRecord rentalRecord = new RentalRecord(reservation, product, quantity, totalPrice);
         RentalRecord savedRentalRecord = rentalRecordRepository.save(rentalRecord);
 
         return RentalResponse.from(savedRentalRecord);

@@ -1,6 +1,7 @@
 package com.camping.admin.service;
 
 import com.camping.admin.domain.entity.Product;
+import com.camping.admin.domain.entity.RentalRecord;
 import com.camping.admin.domain.entity.SalesRecord;
 import com.camping.admin.dto.DailyRevenueReportResponse;
 import com.camping.admin.dto.RangeRevenueReportResponse;
@@ -72,7 +73,7 @@ public class SalesService {
 
         BigDecimal totalRentalRevenue = rentalRecordRepository.findAll().stream()
                 .filter(rr -> rr.getCreatedAt().toLocalDate().equals(date))
-                .map(rr -> rr.getProduct().getPrice().multiply(new BigDecimal(rr.getQuantity())))
+                .map(RentalRecord::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal grandTotal = totalSalesRevenue.add(totalReservationRevenue).add(totalRentalRevenue);
@@ -107,7 +108,7 @@ public class SalesService {
                     LocalDate d = rr.getCreatedAt().toLocalDate();
                     return (d.isEqual(from) || d.isAfter(from)) && (d.isEqual(to) || d.isBefore(to));
                 })
-                .map(rr -> rr.getProduct().getPrice().multiply(new BigDecimal(rr.getQuantity())))
+                .map(RentalRecord::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal grandTotal = totalSalesRevenue.add(totalReservationRevenue).add(totalRentalRevenue);
@@ -155,7 +156,7 @@ public class SalesService {
                 .forEach(rr -> entries.add(new RevenueEntryResponse(
                         RevenueEntryResponse.EntryType.RENTAL,
                         rr.getProduct().getName() + (rr.getReservation() != null ? " (예약#" + rr.getReservation().getId() + ")" : ""),
-                        rr.getProduct().getPrice().multiply(new java.math.BigDecimal(rr.getQuantity())),
+                        rr.getTotalPrice(),
                         rr.getCreatedAt()
                 )));
 

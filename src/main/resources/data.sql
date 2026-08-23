@@ -46,12 +46,12 @@ insert into sales_records (id, product_id, quantity, total_price, created_at) va
   (5, 10, 10, 30000.00, DATEADD('DAY', -25, current_timestamp));
 
 -- Rental Records (연결된 예약과 무관한 워크인 포함)
-insert into rental_records (id, reservation_id, product_id, quantity, is_returned, created_at) values
-  (1, 3, 3, 2, false, DATEADD('DAY', -28, current_timestamp)),
-  (2, 4, 4, 1, true, DATEADD('DAY', -25, current_timestamp)),
-  (3, 5, 5, 3, false, DATEADD('DAY', -21, current_timestamp)),
-  (4, 6, 6, 1, true, DATEADD('DAY', -18, current_timestamp)),
-  (5, 7, 7, 4, false, DATEADD('DAY', -15, current_timestamp)),
-  (6, null, 3, 1, false, DATEADD('DAY', -3, current_timestamp));
+insert into rental_records (id, reservation_id, product_id, quantity, total_price, is_returned, created_at) values
+  (1, 3, 3, 2, 40000.00, false, DATEADD('DAY', -28, current_timestamp)),
+  (2, 4, 4, 1, 15000.00, true, DATEADD('DAY', -25, current_timestamp)),
+  (3, 5, 5, 3, 75000.00, false, DATEADD('DAY', -21, current_timestamp)),
+  (4, 6, 6, 1, 18000.00, true, DATEADD('DAY', -18, current_timestamp)),
+  (5, 7, 7, 4, 48000.00, false, DATEADD('DAY', -15, current_timestamp)),
+  (6, null, 3, 1, 20000.00, false, DATEADD('DAY', -3, current_timestamp));
 
 
