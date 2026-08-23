@@ -53,3 +53,48 @@ flush를 일으킬 트랜잭션 커밋이 없어 JPA 더티 체킹이 작동하�
 
 ---
 
+T-7 예약 매출이 캠핑장 실제 요금과 무관하게 1박당 50,000원으로 고정됨
+
+내용: T-2(매출 리포트 금액 불일치) 작업 중 확인. SalesService의 세 리포트 메서드
+(generateDailyRevenueReport, generateRangeRevenueReport, generateRangeRevenueEntries, 모두
+service/SalesService.java)는 예약 매출을 실제 요금이 아니라 `(박수) * 50000원`으로 고정
+계산한다. Reservation과 Campsite 엔티티 어디에도 요금 필드가 없어 캠핑장별 실제 가격이
+얼마인지 저장돼 있지 않다. 예약 매출 계산이 캠핑장별 실제 요금을 반영해야 하는지, 반영한다면
+요금을 어디에 새로 저장해야 하는지는 요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
+
+---
+
+T-8 매출 상세내역에서 예약 항목의 표시 날짜가 집계 기준 날짜와 다른 필드를 씀
+
+내용: T-2 작업 중 확인. SalesService.generateRangeRevenueEntries(service/SalesService.java:
+118-148)는 예약을 reservationDate 기준으로 필터링해 조회 기간에 포함시키면서도, 목록 항목에
+채우는 occurredAt은 reservationDate가 아니라 r.getCreatedAt()을 쓴다(146번 줄). 두 값이 다른
+예약이 있다면 같은 예약이 "이 기간에 포함된 거래"로 집계되면서도 화면에는 그 기간 밖의 날짜로
+표시될 수 있다.
+
+이 저장소는 README.md에 "관리자를 위한 통합 관리 시스템"으로 명시돼 있고 주요 기능도 "예약
+관리"(조회/상태변경)이지 "예약 접수"가 아니다 — 즉 고객이 실제로 예약을 만드는 흐름은 이
+저장소 밖의 별도 시스템(고객용 예약 페이지) 몫으로 보이고, ReservationAdminController에
+생성(POST) 엔드포인트가 없는 것은 버그가 아니라 이 프로젝트의 의도된 경계일 가능성이 크다.
+그래서 이 티켓에서는 reservationDate와 createdAt이 다른 예약을 이 저장소의 API로 직접 만들어
+curl로 재현할 방법이 없었다 — data.sql 시드 예약은 모두 두 값이 같은 날짜로 맞춰져 있다. 이
+불일치가 실제 운영 데이터(고객용 시스템이 만드는 예약)에서 발생하는지, 발생한다면 이 admin
+쪽에서 어느 필드를 표시에 써야 하는지는 이 저장소만으로는 확인할 수 없어 판단하지 않는다.
+
+---
+
+T-9 서버 기동 직후 대여/판매 등록 API가 몇 차례 500 응답을 반환함
+
+내용: T-2 작업 중 확인. `POST /admin/rentals`, `POST /api/sales`를 서버 기동 직후 호출하면
+처음 몇 번은 `{"status":500,"error":"Internal Server Error"}`를 반환하고(직접 호출로 실측:
+rental_records는 5회, sales_records는 4회 연속 500 이후 정상 응답), 서버 로그엔
+"Unique index or primary key violation" H2 예외가 찍힌다. `data.sql`이 rental_records/
+sales_records에 명시적 id로 로우를 넣어 두는데(rental_records 1~6, sales_records 1~5) H2의
+identity 카운터가 그 explicit id들을 반영하지 못해 시드 최대 id 근처에서 겹치는 값을
+발급하다가, 몇 번 실패한 뒤에야 시드 범위를 넘어서며 정상 동작한다. 재현: 서버를 새로
+기동한 직후 위 두 엔드포인트를 연달아 호출하면 항상 재현됨. 이 문제를 이 티켓(T-2)에서
+함께 고칠지, 별도로 처리할지, data.sql의 시드 방식(explicit id) 자체를 바꿀지는 요구사항이
+침묵하므로 이 티켓에서는 판단하지 않는다.
+
+---
+
