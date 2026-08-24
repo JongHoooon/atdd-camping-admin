@@ -1,5 +1,9 @@
 .claude/*
 !.claude/skills/
+!.claude/settings.json
+!.claude/gate/
+.claude/gate/state.json
+.claude/gate/gate.log
 .gradle/
 .idea/
 build/
