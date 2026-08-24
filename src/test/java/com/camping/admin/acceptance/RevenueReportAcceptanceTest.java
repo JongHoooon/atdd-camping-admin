@@ -341,6 +341,47 @@ class RevenueReportAcceptanceTest {
                 assertThat(dailyGrandTotal).isEqualTo(rangeGrandTotal);
                 assertThat(entriesSum).isEqualTo(rangeGrandTotal);
             }
+
+            @Test
+            @DisplayName("여러 날에 걸친 기간으로 조회해도 기간 리포트 합계는 일별 합계 총합·상세내역 합계와 일치한다")
+            void 여러_날에_걸친_기간으로_조회해도_기간_리포트_합계는_일별_합계_총합_상세내역_합계와_일치한다() {
+                // data.sql 시드 중 판매·대여가 모두 있는 -25일~-15일(10일 범위)로 실측한다.
+                LocalDate from = LocalDate.now().minusDays(25);
+                LocalDate to = LocalDate.now().minusDays(15);
+
+                float rangeGrandTotal = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", from.toString())
+                        .queryParam("to", to.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("grandTotalRevenue");
+
+                List<Float> entryAmounts = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", from.toString())
+                        .queryParam("to", to.toString())
+                        .when().get("/admin/reports/revenue/range/entries")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getList("amount", Float.class);
+                float entriesSum = 0f;
+                for (float amount : entryAmounts) {
+                    entriesSum += amount;
+                }
+
+                float dailyTotalsSum = 0f;
+                for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
+                    dailyTotalsSum += given()
+                            .header("Authorization", "Bearer " + accessToken)
+                            .queryParam("date", date.toString())
+                            .when().get("/admin/reports/revenue/daily")
+                            .then().statusCode(200)
+                            .extract().jsonPath().getFloat("grandTotalRevenue");
+                }
+
+                assertThat(dailyTotalsSum).isEqualTo(rangeGrandTotal);
+                assertThat(entriesSum).isEqualTo(rangeGrandTotal);
+            }
         }
     }
 }
