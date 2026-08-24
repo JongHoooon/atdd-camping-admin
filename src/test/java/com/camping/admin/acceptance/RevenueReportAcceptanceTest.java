@@ -199,8 +199,8 @@ class RevenueReportAcceptanceTest {
             }
 
             @Test
-            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 일별 리포트의 대여 매출 합계는 거래 시점 금액을 유지해야 한다")
-            void 대여_완료_후_가격이_바뀌어도_일별_리포트_대여_매출_합계는_거래_시점_금액을_유지해야_한다() {
+            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 일별 리포트에 반영된 이 거래의 대여 매출은 거래 시점 금액을 유지해야 한다")
+            void 대여_완료_후_가격이_바뀌어도_일별_리포트에_반영된_이_거래의_대여_매출은_거래_시점_금액을_유지해야_한다() {
                 LocalDate today = LocalDate.now();
                 float baseline = dailyTotalRentalRevenue(today);
 
@@ -214,8 +214,8 @@ class RevenueReportAcceptanceTest {
             }
 
             @Test
-            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 기간 리포트의 대여 매출 합계는 거래 시점 금액을 유지해야 한다")
-            void 대여_완료_후_가격이_바뀌어도_기간_리포트_대여_매출_합계는_거래_시점_금액을_유지해야_한다() {
+            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 기간 리포트에 반영된 이 거래의 대여 매출은 거래 시점 금액을 유지해야 한다")
+            void 대여_완료_후_가격이_바뀌어도_기간_리포트에_반영된_이_거래의_대여_매출은_거래_시점_금액을_유지해야_한다() {
                 LocalDate today = LocalDate.now();
                 float baseline = rangeTotalRentalRevenue(today);
 
@@ -255,8 +255,8 @@ class RevenueReportAcceptanceTest {
             }
 
             @Test
-            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 일별 리포트의 판매 매출 합계는 거래 시점 금액 그대로 유지된다")
-            void 판매_완료_후_가격이_바뀌어도_일별_리포트_판매_매출_합계는_거래_시점_금액_그대로_유지된다() {
+            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 일별 리포트에 반영된 이 거래의 판매 매출은 거래 시점 금액 그대로 유지된다")
+            void 판매_완료_후_가격이_바뀌어도_일별_리포트에_반영된_이_거래의_판매_매출은_거래_시점_금액_그대로_유지된다() {
                 LocalDate today = LocalDate.now();
                 float baseline = dailyTotalSalesRevenue(today);
 
@@ -270,8 +270,8 @@ class RevenueReportAcceptanceTest {
             }
 
             @Test
-            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 기간 리포트의 판매 매출 합계는 거래 시점 금액 그대로 유지된다")
-            void 판매_완료_후_가격이_바뀌어도_기간_리포트_판매_매출_합계는_거래_시점_금액_그대로_유지된다() {
+            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 기간 리포트에 반영된 이 거래의 판매 매출은 거래 시점 금액 그대로 유지된다")
+            void 판매_완료_후_가격이_바뀌어도_기간_리포트에_반영된_이_거래의_판매_매출은_거래_시점_금액_그대로_유지된다() {
                 LocalDate today = LocalDate.now();
                 float baseline = rangeTotalSalesRevenue(today);
 
