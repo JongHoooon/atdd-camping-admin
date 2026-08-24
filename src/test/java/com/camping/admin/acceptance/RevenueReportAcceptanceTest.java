@@ -136,6 +136,44 @@ class RevenueReportAcceptanceTest {
                 .getFloat("find { it.title == '%s' }.amount".formatted(title));
     }
 
+    private float dailyTotalRentalRevenue(LocalDate date) {
+        return given()
+                .header("Authorization", "Bearer " + accessToken)
+                .queryParam("date", date.toString())
+                .when().get("/admin/reports/revenue/daily")
+                .then().statusCode(200)
+                .extract().jsonPath().getFloat("totalRentalRevenue");
+    }
+
+    private float rangeTotalRentalRevenue(LocalDate date) {
+        return given()
+                .header("Authorization", "Bearer " + accessToken)
+                .queryParam("from", date.toString())
+                .queryParam("to", date.toString())
+                .when().get("/admin/reports/revenue/range")
+                .then().statusCode(200)
+                .extract().jsonPath().getFloat("totalRentalRevenue");
+    }
+
+    private float dailyTotalSalesRevenue(LocalDate date) {
+        return given()
+                .header("Authorization", "Bearer " + accessToken)
+                .queryParam("date", date.toString())
+                .when().get("/admin/reports/revenue/daily")
+                .then().statusCode(200)
+                .extract().jsonPath().getFloat("totalSalesRevenue");
+    }
+
+    private float rangeTotalSalesRevenue(LocalDate date) {
+        return given()
+                .header("Authorization", "Bearer " + accessToken)
+                .queryParam("from", date.toString())
+                .queryParam("to", date.toString())
+                .when().get("/admin/reports/revenue/range")
+                .then().statusCode(200)
+                .extract().jsonPath().getFloat("totalSalesRevenue");
+    }
+
     @Nested
     @DisplayName("T-2: 대여(rental) 거래의 매출 금액은 조회 시점의 상품 가격이 아니라 거래가 발생한 시점의 금액으로 고정되어야 한다")
     class T2_대여_매출은_거래_시점_금액으로_고정되어야_한다 {
@@ -158,6 +196,36 @@ class RevenueReportAcceptanceTest {
 
                 float amountAfterPriceChange = revenueEntryAmountByTitle(today, "T2대여상품");
                 assertThat(amountAfterPriceChange).isEqualTo(30000f);
+            }
+
+            @Test
+            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 일별 리포트의 대여 매출 합계는 거래 시점 금액을 유지해야 한다")
+            void 대여_완료_후_가격이_바뀌어도_일별_리포트_대여_매출_합계는_거래_시점_금액을_유지해야_한다() {
+                LocalDate today = LocalDate.now();
+                float baseline = dailyTotalRentalRevenue(today);
+
+                Long productId = createProduct("T2일별대여상품", 20, 30000, "RENTAL");
+                createWalkInRental(productId, 1);
+                assertThat(dailyTotalRentalRevenue(today) - baseline).isEqualTo(30000f);
+
+                updateProductPrice(productId, 99000);
+
+                assertThat(dailyTotalRentalRevenue(today) - baseline).isEqualTo(30000f);
+            }
+
+            @Test
+            @DisplayName("대여 거래 완료 후 상품 가격이 바뀌어도 기간 리포트의 대여 매출 합계는 거래 시점 금액을 유지해야 한다")
+            void 대여_완료_후_가격이_바뀌어도_기간_리포트_대여_매출_합계는_거래_시점_금액을_유지해야_한다() {
+                LocalDate today = LocalDate.now();
+                float baseline = rangeTotalRentalRevenue(today);
+
+                Long productId = createProduct("T2기간대여상품", 20, 30000, "RENTAL");
+                createWalkInRental(productId, 1);
+                assertThat(rangeTotalRentalRevenue(today) - baseline).isEqualTo(30000f);
+
+                updateProductPrice(productId, 99000);
+
+                assertThat(rangeTotalRentalRevenue(today) - baseline).isEqualTo(30000f);
             }
         }
     }
@@ -184,6 +252,36 @@ class RevenueReportAcceptanceTest {
 
                 float amountAfterPriceChange = revenueEntryAmountByTitle(today, "T2판매상품 외");
                 assertThat(amountAfterPriceChange).isEqualTo(55555f);
+            }
+
+            @Test
+            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 일별 리포트의 판매 매출 합계는 거래 시점 금액 그대로 유지된다")
+            void 판매_완료_후_가격이_바뀌어도_일별_리포트_판매_매출_합계는_거래_시점_금액_그대로_유지된다() {
+                LocalDate today = LocalDate.now();
+                float baseline = dailyTotalSalesRevenue(today);
+
+                Long productId = createProduct("T2일별판매상품", 50, 55555, "SALE");
+                createSale(productId, 1);
+                assertThat(dailyTotalSalesRevenue(today) - baseline).isEqualTo(55555f);
+
+                updateProductPrice(productId, 12345);
+
+                assertThat(dailyTotalSalesRevenue(today) - baseline).isEqualTo(55555f);
+            }
+
+            @Test
+            @DisplayName("판매 거래 완료 후 상품 가격이 바뀌어도 기간 리포트의 판매 매출 합계는 거래 시점 금액 그대로 유지된다")
+            void 판매_완료_후_가격이_바뀌어도_기간_리포트_판매_매출_합계는_거래_시점_금액_그대로_유지된다() {
+                LocalDate today = LocalDate.now();
+                float baseline = rangeTotalSalesRevenue(today);
+
+                Long productId = createProduct("T2기간판매상품", 50, 55555, "SALE");
+                createSale(productId, 1);
+                assertThat(rangeTotalSalesRevenue(today) - baseline).isEqualTo(55555f);
+
+                updateProductPrice(productId, 12345);
+
+                assertThat(rangeTotalSalesRevenue(today) - baseline).isEqualTo(55555f);
             }
         }
     }
