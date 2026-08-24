@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ ! -f .claude/gate/armed ]; then exit 0; fi; OUTPUT=$(./gradlew test --rerun-tasks 2>&1); CODE=$?; if [ $CODE -ne 0 ]; then echo \"$OUTPUT\" >&2; exit 2; fi",
+            "command": "if [ ! -f .claude/gate/armed ]; then exit 0; fi\n.claude/gate/gate-check.sh",
             "timeout": 600
           }
         ]
