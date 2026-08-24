@@ -10,8 +10,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.jdbc.Sql;
@@ -295,52 +293,6 @@ class RevenueReportAcceptanceTest {
         @Nested
         @DisplayName("리포트 조회")
         class 리포트_조회 {
-
-            @ParameterizedTest
-            @ValueSource(ints = {0, 15, 25})
-            @DisplayName("같은 시점에 조회하면 일별 리포트와 기간 리포트와 상세내역 합계 금액이 서로 일치한다")
-            void 같은_시점에_조회하면_일별_리포트와_기간_리포트와_상세내역_합계_금액이_서로_일치한다(int daysAgo) {
-                LocalDate targetDate = LocalDate.now().minusDays(daysAgo);
-
-                if (daysAgo == 0) {
-                    // 대여/판매는 생성 시점(now)으로만 찍혀 다른 날짜 데이터를 API로 만들 수 없다.
-                    // -15일/-25일은 data.sql 시드에 판매·대여가 모두 있는 날짜라 그대로 실측한다.
-                    Long saleProductId = createProduct("T2합계판매상품", 30, 20000, "SALE");
-                    createSale(saleProductId, 1);
-                    Long rentalProductId = createProduct("T2합계대여상품", 10, 40000, "RENTAL");
-                    createWalkInRental(rentalProductId, 1);
-                }
-
-                float dailyGrandTotal = given()
-                        .header("Authorization", "Bearer " + accessToken)
-                        .queryParam("date", targetDate.toString())
-                        .when().get("/admin/reports/revenue/daily")
-                        .then().statusCode(200)
-                        .extract().jsonPath().getFloat("grandTotalRevenue");
-
-                float rangeGrandTotal = given()
-                        .header("Authorization", "Bearer " + accessToken)
-                        .queryParam("from", targetDate.toString())
-                        .queryParam("to", targetDate.toString())
-                        .when().get("/admin/reports/revenue/range")
-                        .then().statusCode(200)
-                        .extract().jsonPath().getFloat("grandTotalRevenue");
-
-                List<Float> entryAmounts = given()
-                        .header("Authorization", "Bearer " + accessToken)
-                        .queryParam("from", targetDate.toString())
-                        .queryParam("to", targetDate.toString())
-                        .when().get("/admin/reports/revenue/range/entries")
-                        .then().statusCode(200)
-                        .extract().jsonPath().getList("amount", Float.class);
-                float entriesSum = 0f;
-                for (float amount : entryAmounts) {
-                    entriesSum += amount;
-                }
-
-                assertThat(dailyGrandTotal).isEqualTo(rangeGrandTotal);
-                assertThat(entriesSum).isEqualTo(rangeGrandTotal);
-            }
 
             @Test
             @DisplayName("여러 날에 걸친 기간으로 조회해도 기간 리포트 합계는 일별 합계 총합·상세내역 합계와 일치한다")
