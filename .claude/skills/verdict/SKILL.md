@@ -12,9 +12,14 @@ argument-hint: <티켓 ID>
 
 ## 멈추는 조건
 
-- 같은 실패가 세 번 반복되면 멈추고 사람을 부른다
-- 세 번 반복하는 동안 각 단계에서 무엇을 했는지 `docs/rotations.md`에 한 줄 남긴다.
-정상적으로 완료됐을 때는 남기지 않는다.
+이 스킬이 완료 기준에 도달하지 못한 채 멈추려 하면, 왜 멈추는지 아래 3가지 중 하나로 스스로
+판단해 `docs/rotations.md`에 한 줄 남긴다(질문을 던지고 답을 받아 같은 실행 안에서 계속
+이어간다면 남기지 않는다):
+
+- **회색지대**: 판단이 필요한 지점이라 AskUserQuestion으로 묻고 멈춘다.
+- **맴돌다 끊김**: 같은 원인으로 제자리걸음이라고 스스로 판단되면 멈추고 사람을 부른다 —
+  테스트가 실패했다는 사실 자체는 이유가 아니다(TDD 특성상 정상적인 실패일 수 있다).
+- **예산 소진**: 컨텍스트/턴 예산이 바닥나 완료 기준에 도달하지 못하고 멈춘다.
 
 ## 0. 입력 확인
 
@@ -28,10 +33,11 @@ Agent 도구로 이 스킬 호출을 위임한 경우). 이미 서브에이전�
 이 세션은 직접 1~5단계를 수행하지 않는다.
 
 아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
-끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+끝나는 시점에 테스트를 실제로 돌렸는지, 완료 못 하고 멈췄다면 `docs/rotations.md`에 기록을
+남겼는지 확인하는 데 쓴다:
 
 ```bash
-mkdir -p .claude/gate && jq -n --arg s "verdict" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+mkdir -p .claude/gate && jq -n --arg s "verdict" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, completed:false, tests_verified:false, rotations_baseline:$rb}' > .claude/gate/state.json
 ```
 
 인자로 티켓 ID(`T-n`)를 받는다.
@@ -67,13 +73,17 @@ mkdir -p .claude/gate && jq -n --arg s "verdict" '{current_skill:$s, tests_verif
 - 전체 스위트를 실행했으면(결과와 무관하게) 아래 명령으로 실제로 돌렸다는 사실을
   `.claude/gate/state.json`에 기록한다:
   ```bash
-  jq -n --arg s "verdict" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+  jq '.tests_verified=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
   ```
 - 결과를 못 읽으면 완료로 치지 않고 멈춘다(`docs/principles.md` "확인이 안 되면 통과가 아니다").
 - **명령 출력에서 결과 요약 줄(`BUILD SUCCESSFUL`/`BUILD FAILED`, `n tests completed, m failed` 등)과
   실패 테스트가 있다면 그 클래스/메서드명을 그대로 옮겨 적어 둔다 — 이 인용은 6단계 보고에 그대로
   쓴다.** "모두 통과했다/일부 실패했다"처럼 결과 줄을 인용하지 않고 서술로만 판정하지 않는다.
 - 이번 티켓의 인수 테스트가 통과하고, 그 외 기존 테스트가 전부 그대로 통과해야(회귀 없음) 완료다.
+  진짜로 완료됐으면 아래 명령으로 `completed`를 표시한다:
+  ```bash
+  jq '.completed=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
+  ```
 - 실패가 있으면 완료가 아니다 — 이 스킬은 스스로 코드를 고치지 않는다. 어떤 테스트가 왜 깨졌는지,
   방금 옮겨 적은 실패 테스트명을 근거로 정리해 사용자에게 보고하고 멈춘다. 3단계로 돌아가 고친
   뒤 다시 이 스킬을 실행해야 한다.

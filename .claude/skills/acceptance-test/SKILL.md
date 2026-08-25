@@ -11,17 +11,23 @@ argument-hint: <티켓 ID> [테스트로 옮길 규칙]
 
 ## 멈추는 조건
 
-- 같은 실패가 세 번 반복되면 멈추고 사람을 부른다
-- 세 번 반복하는 동안 각 단계에서 무엇을 했는지 `docs/rotations.md`에 한 줄 남긴다.
-정상적으로 완료됐을 때는 남기지 않는다.
+이 스킬이 완료 기준에 도달하지 못한 채 멈추려 하면, 왜 멈추는지 아래 3가지 중 하나로 스스로
+판단해 `docs/rotations.md`에 한 줄 남긴다(질문을 던지고 답을 받아 같은 실행 안에서 계속
+이어간다면 남기지 않는다):
+
+- **회색지대**: 판단이 필요한 지점이라 AskUserQuestion으로 묻고 멈춘다.
+- **맴돌다 끊김**: 같은 원인으로 제자리걸음이라고 스스로 판단되면 멈추고 사람을 부른다 —
+  테스트가 실패했다는 사실 자체는 이유가 아니다(TDD 특성상 정상적인 실패일 수 있다).
+- **예산 소진**: 컨텍스트/턴 예산이 바닥나 완료 기준에 도달하지 못하고 멈춘다.
 
 ## 0. 입력 확인
 
 아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
-끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+끝나는 시점에 테스트를 실제로 돌렸는지, 완료 못 하고 멈췄다면 `docs/rotations.md`에 기록을
+남겼는지 확인하는 데 쓴다:
 
 ```bash
-mkdir -p .claude/gate && jq -n --arg s "acceptance-test" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+mkdir -p .claude/gate && jq -n --arg s "acceptance-test" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, completed:false, tests_verified:false, rotations_baseline:$rb}' > .claude/gate/state.json
 ```
 
 인자로 티켓 ID(`T-n`)를 받는다.
@@ -164,7 +170,7 @@ class <요구사항 주제를 서술하는 영문 이름>AcceptanceTest {
 `.claude/gate/state.json`에 기록한다:
 
 ```bash
-jq -n --arg s "acceptance-test" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+jq '.tests_verified=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
 ```
 
 결과를 못 읽으면 라벨과 상관없이 완료로 치지 않는다(`docs/principles.md` "확인이 안 되면
@@ -179,6 +185,11 @@ jq -n --arg s "acceptance-test" '{current_skill:$s, tests_verified:true}' > .cla
   실패하면 `acceptance-criteria.md`의 실측 기록과 지금 코드 상태가 어긋난 것이므로, 조용히
   assert를 바꾸지 말고 사용자에게 알린다.
 - 테스트별 결과를 요약해 보고한다 (메서드명 → PASS/FAIL → 기대와 일치 여부).
+- 모든 라벨이 기대와 일치해 진짜로 완료됐으면 아래 명령으로 `completed`를 표시한다:
+
+```bash
+jq '.completed=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
+```
 
 ## 5. `docs/test-guide.md` 준수 확인 및 갱신 질문
 

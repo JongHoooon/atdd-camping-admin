@@ -10,17 +10,30 @@ argument-hint: <티켓 ID> [고칠 테스트 클래스/메서드]
 
 ## 멈추는 조건
 
-- 같은 실패가 세 번 반복되면 멈추고 사람을 부른다
-- 세 번 반복하는 동안 각 단계에서 무엇을 했는지 `docs/rotations.md`에 한 줄 남긴다.
-정상적으로 완료됐을 때는 남기지 않는다.
+이 스킬이 완료 기준에 도달하지 못한 채 멈추려 하면, 왜 멈추는지 아래 3가지 중 하나로 스스로
+판단해 `docs/rotations.md`에 한 줄 남긴다(질문을 던지고 답을 받아 같은 실행 안에서 계속
+이어간다면 남기지 않는다):
+
+- **회색지대**: 판단이 필요한 지점이라 AskUserQuestion으로 묻고 멈춘다.
+- **맴돌다 끊김**: 같은 원인으로 제자리걸음이라고 스스로 판단되면 멈추고 사람을 부른다 —
+  테스트가 실패했다는 사실 자체는 이유가 아니다(TDD 특성상 정상적인 실패일 수 있다).
+- **예산 소진**: 컨텍스트/턴 예산이 바닥나 완료 기준에 도달하지 못하고 멈춘다.
+
+**안전망**: 위 판단을 스스로 놓칠 경우를 대비해, 이 스킬에서 `--tests`로 대상 클래스만 돌릴 때마다
+훅이 결과 XML을 읽어 같은 테스트가 3번째로 같은 이유로 실패하거나 이번 구현 시도에서 총 5번째
+실패하면 강제로 개입한다(도구 호출 직후 `exit 2`로 경고를 준다). 이 스킬만 대상이다 —
+`acceptance-test`는 아직 통과 안 하는 게 정상(레드 페이즈)이라 실패를 세면 오탐이 나서 제외한다.
+이 안전망이 발동하면 위 "맴돌다 끊김"으로 간주하고 그대로 따른다.
 
 ## 0. 입력 확인
 
-아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
-끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록하고, `.claude/gate/failures.json`의
+실패 카운터를 초기화한다 — Stop 훅은 테스트 실행 여부와 `docs/rotations.md` 기록 여부를,
+안전망 훅은 같은 테스트 반복 실패 횟수를 이 파일들로 추적한다:
 
 ```bash
-mkdir -p .claude/gate && jq -n --arg s "implementation" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+mkdir -p .claude/gate && jq -n --arg s "implementation" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, completed:false, tests_verified:false, rotations_baseline:$rb}' > .claude/gate/state.json
+echo '{"by_name":{},"total":0}' > .claude/gate/failures.json
 ```
 
 인자로 티켓 ID(`T-n`)를 받는다.
@@ -70,7 +83,7 @@ mkdir -p .claude/gate && jq -n --arg s "implementation" '{current_skill:$s, test
 `.claude/gate/state.json`에 기록한다:
 
 ```bash
-jq -n --arg s "implementation" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+jq '.tests_verified=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
 ```
 
 - 결과를 못 읽으면 완료로 치지 않고 멈춘다(`docs/principles.md` "확인이 안 되면 통과가 아니다").
@@ -79,7 +92,12 @@ jq -n --arg s "implementation" '{current_skill:$s, tests_verified:true}' > .clau
 - 이번에 건드린 코드와 같은 클래스/같은 API를 다루는 다른 기존 테스트 파일이 있으면 함께 실행해,
 이번 변경이 그 테스트를 깨뜨리지 않았어야 완료다 (전체 스위트 재실행은 4단계 몫이므로 여기서는
 관련된 파일만 돈다).
-- 위 두 조건(대상 테스트 통과, 관련 기존 테스트 회귀 없음)이 모두 갖춰져야 완료다.
+- 위 두 조건(대상 테스트 통과, 관련 기존 테스트 회귀 없음)이 모두 갖춰져 진짜로 완료됐으면
+아래 명령으로 `completed`를 표시한다:
+
+```bash
+jq '.completed=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
+```
 
 ## 6. 마무리 보고
 

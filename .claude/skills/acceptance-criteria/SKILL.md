@@ -12,9 +12,14 @@ argument-hint: <티켓 ID> [이 티켓에서 다룰 요구사항 설명]
 
 ## 멈추는 조건
 
-- 같은 실패가 세 번 반복되면 멈추고 사람을 부른다 
-- 세 번 반복하는 동안 각 단계에서 무엇을 했는지 `docs/rotations.md`에 한 줄 남긴다. 
-정상적으로 완료됐을 때는 남기지 않는다.
+이 스킬이 완료 기준에 도달하지 못한 채 멈추려 하면, 왜 멈추는지 아래 3가지 중 하나로 스스로
+판단해 `docs/rotations.md`에 한 줄 남긴다(질문을 던지고 답을 받아 같은 실행 안에서 계속
+이어간다면 남기지 않는다):
+
+- **회색지대**: 판단이 필요한 지점이라 AskUserQuestion으로 묻고 멈춘다.
+- **맴돌다 끊김**: 같은 원인으로 제자리걸음이라고 스스로 판단되면 멈추고 사람을 부른다 —
+  테스트가 실패했다는 사실 자체는 이유가 아니다(TDD 특성상 정상적인 실패일 수 있다).
+- **예산 소진**: 컨텍스트/턴 예산이 바닥나 완료 기준에 도달하지 못하고 멈춘다.
 
 ## 사용 예시
 
@@ -25,6 +30,13 @@ argument-hint: <티켓 ID> [이 티켓에서 다룰 요구사항 설명]
 동작 흐름: `docs/tickets.md`의 `T-4` 항목을 읽고, 요구사항이 하나로 명확하면 추가 질문 없이진행한다. 서버를 직접 실행해 호출해 실측하고, 그중 일부 경로에서만 검증이 빠져 있는 버그를 확인했다면 그 결과를 `docs/acceptance-criteria.md`에 `# T-4 인수 조건` 블록으로 남긴다.
 
 ## 0. 입력 확인
+
+아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
+완료 기준에 못 미친 채 멈출 때 `docs/rotations.md`에 기록을 남겼는지 확인하는 데 쓴다:
+
+```bash
+mkdir -p .claude/gate && jq -n --arg s "acceptance-criteria" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, completed:false, rotations_baseline:$rb}' > .claude/gate/state.json
+```
 
 인자로 티켓 ID(`T-n`)를 받는다.
 
@@ -202,6 +214,11 @@ When   ...                                  Then  ...
 - `docs/tickets.md`에 새 티켓을 추가했다면 `docs/plan.md`의 "새 티켓 남기기" 형식을 지켰어야
 완료다.
 - 코드나 테스트 파일은 건드리지 않았어야 완료다 — 이 스킬은 2단계(인수 테스트) 이전에서 멈춘다.
+- 위 조건을 모두 갖춰 진짜로 완료됐으면 아래 명령으로 `.claude/gate/state.json`에 `completed`를
+표시한다:
+  ```bash
+  jq '.completed=true' .claude/gate/state.json > .claude/gate/state.json.tmp && mv .claude/gate/state.json.tmp .claude/gate/state.json
+  ```
 - 작업 요약을 짧게 보고한다: 어떤 요구사항을 몇 개의 예시로 실측했는지, 새로 생긴 티켓이 있는지,
 아직 열려 있는 질문이 있는지.
 
