@@ -64,6 +64,7 @@ public class SalesService {
 
         BigDecimal totalReservationRevenue = reservationRepository.findAll().stream()
                 .filter(r -> r.getReservationDate() != null && r.getReservationDate().equals(date))
+                .filter(r -> !"CANCELLED".equals(r.getStatus()))
                 .map(r -> {
                     long nights = java.time.temporal.ChronoUnit.DAYS.between(r.getStartDate(), r.getEndDate());
                     if (nights < 1) nights = 1; // 최소 1박 처리
@@ -96,6 +97,7 @@ public class SalesService {
                     LocalDate d = r.getReservationDate();
                     return (d.isEqual(from) || d.isAfter(from)) && (d.isEqual(to) || d.isBefore(to));
                 })
+                .filter(r -> !"CANCELLED".equals(r.getStatus()))
                 .map(r -> {
                     long nights = java.time.temporal.ChronoUnit.DAYS.between(r.getStartDate(), r.getEndDate());
                     if (nights < 1) nights = 1;
@@ -137,6 +139,7 @@ public class SalesService {
                     LocalDate d = r.getReservationDate();
                     return (d.isEqual(from) || d.isAfter(from)) && (d.isEqual(to) || d.isBefore(to));
                 })
+                .filter(r -> !"CANCELLED".equals(r.getStatus()))
                 .forEach(r -> {
                     long nights = java.time.temporal.ChronoUnit.DAYS.between(r.getStartDate(), r.getEndDate());
                     if (nights < 1) nights = 1;
