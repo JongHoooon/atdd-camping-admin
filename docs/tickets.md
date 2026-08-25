@@ -117,3 +117,18 @@ T-10 거래 당시 상품 정보를 스냅샷으로 남기는 별도 테이블 �
 
 ---
 
+T-11 취소 외 예약 상태의 매출 반영 여부가 정해지지 않음
+
+내용: T-3 작업 중 확인. `SalesService`의 세 리포트 메서드(generateDailyRevenueReport,
+generateRangeRevenueReport, generateRangeRevenueEntries, 모두 service/SalesService.java)는
+예약을 reservationDate로만 걸러 매출에 합산하고 상태는 전혀 보지 않는다. T-3에서는 CANCELLED
+상태만 매출에서 빼기로 확정했지만, 그 외 상태(WAITING/PENDING/REJECTED/CHECKED_IN/
+CHECKED_OUT)를 매출에 포함해야 하는지 제외해야 하는지는 요구사항이 침묵하므로 T-3 범위에서는
+판단하지 않는다.
+
+필요: 상태별 매출 반영 정책을 정한다 — 예: 확정 전 단계인 WAITING/PENDING도 매출로 잡아야
+하는지, 예약을 거절한 REJECTED나 이미 체크인/체크아웃한 CHECKED_IN/CHECKED_OUT은 어떻게
+다뤄야 하는지. 정책이 정해지면 어떤 상태를 어느 리포트에서 제외할지 확인한다.
+
+---
+
