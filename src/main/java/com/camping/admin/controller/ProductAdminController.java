@@ -104,13 +104,58 @@ public class ProductAdminController {
     }
 
     @PutMapping("/{productId}")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<?> updateProduct(
             @PathVariable Long productId,
             @RequestBody Map<String, Object> body) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Cannot find product with id: " + productId));
 
         if (body != null) {
+            if (body.containsKey("stockQuantity")) {
+                Object v = body.get("stockQuantity");
+                if (v instanceof Number) {
+                    if (((Number) v).intValue() < 0) {
+                        return badRequest("stockQuantity는 0 이상이어야 합니다");
+                    }
+                } else if (v != null) {
+                    try {
+                        Integer.valueOf(v.toString());
+                    } catch (Exception e) {
+                        return badRequest("stockQuantity는 숫자여야 합니다");
+                    }
+                }
+            }
+            if (body.containsKey("price")) {
+                Object v = body.get("price");
+                if (v instanceof Number) {
+                    if (new BigDecimal(v.toString()).compareTo(BigDecimal.ZERO) < 0) {
+                        return badRequest("price는 0 이상이어야 합니다");
+                    }
+                } else if (v != null) {
+                    try {
+                        new BigDecimal(v.toString());
+                    } catch (Exception e) {
+                        return badRequest("price는 숫자여야 합니다");
+                    }
+                }
+            }
+            if (body.containsKey("name")) {
+                Object v = body.get("name");
+                if (v != null && v.toString().isEmpty()) {
+                    return badRequest("name은 빈 문자열일 수 없습니다");
+                }
+            }
+            if (body.containsKey("productType")) {
+                Object v = body.get("productType");
+                if (v != null) {
+                    try {
+                        ProductType.valueOf(v.toString());
+                    } catch (Exception e) {
+                        return badRequest("productType은 정의된 값이어야 합니다");
+                    }
+                }
+            }
+
             if (body.containsKey("name")) {
                 Object v = body.get("name");
                 if (v != null) {
@@ -152,5 +197,9 @@ public class ProductAdminController {
 
         Product saved = productRepository.save(product);
         return ResponseEntity.ok(saved);
+    }
+
+    private ResponseEntity<?> badRequest(String message) {
+        return ResponseEntity.badRequest().body(Map.of("error", message));
     }
 }
