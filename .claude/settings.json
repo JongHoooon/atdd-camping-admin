@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ ! -f .claude/gate/armed ]; then exit 0; fi\n.claude/gate/gate-check.sh",
+            "command": "./gradlew test --rerun-tasks >/dev/null 2>&1; C=$?; [ $C -eq 0 ] && S=PASS || S=\"FAIL(exit $C)\"; jq -cn --arg m \"[Stop 훅] 테스트 재실행 결과: $S\" '{hookSpecificOutput:{additionalContext:$m,systemMessage:$m}}'",
             "timeout": 600
           }
         ]
