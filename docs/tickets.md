@@ -132,3 +132,21 @@ CHECKED_OUT)를 매출에 포함해야 하는지 제외해야 하는지는 요�
 
 ---
 
+T-12 예약 상태가 enum 없이 매직 스트링으로 다뤄짐
+
+내용: T-3 구현 중 확인. `domain/enums/ReservationStatus`에 WAITING/PENDING/CONFIRMED/
+REJECTED/CHECKED_IN/CHECKED_OUT/CANCELLED enum이 정의돼 있지만, `Reservation` 엔티티의
+`status` 필드(domain/entity/Reservation.java:39)는 `@Enumerated` 없는 순수 `String`이라
+이 enum을 실제로 참조하는 곳이 프로젝트 전체에 하나도 없다. 대신 `"CANCELLED"`/`"CONFIRMED"`
+같은 문자열 리터럴이 여러 곳에 흩어져 있다(`Reservation.java:50`의 `@PrePersist` 기본값,
+`ReservationRepository.java:18`의 JPQL, `ReservationAdminController.java:59-66`의 PATCH
+처리 — 여기는 값 검증도 없어 enum에 없는 임의 문자열도 그대로 저장됨, T-3에서 추가한
+`SalesService.java`의 매출 필터 세 곳도 같은 관례를 따름). 이 불일치를 지금 고칠지는
+요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
+
+필요: 엔티티 필드를 `@Enumerated(EnumType.STRING)` + `ReservationStatus` 타입으로 바꾸고
+매직 스트링을 쓰는 위 지점들을 enum 참조로 교체할지 결정한다. `ReservationAdminController`의
+값 검증 부재(T-11과 별개로, enum에 없는 값 자체를 거부할지)도 함께 볼지 정한다.
+
+---
+
