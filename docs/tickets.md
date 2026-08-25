@@ -150,23 +150,3 @@ REJECTED/CHECKED_IN/CHECKED_OUT/CANCELLED enum이 정의돼 있지만, `Reservat
 
 ---
 
-T-13 웹 콘솔 상품 수정 화면에도 값 검증이 없음
-
-내용: T-5 구현 중 확인. `web/ConsoleProductController.update`(POST /console/products/{id})는
-`ProductAdminController.updateProduct`와 같은 방식(엔티티 조회 → setter로 필드 반영 →
-save())으로 상품을 수정하는데, T-5에서 JSON API(`ProductAdminController`)에만 추가한
-검증(상품명 공백/빈 문자열 거부, 재고·가격 음수 거부, 파싱 불가능한 값·정의되지 않은
-productType 거부)이 이 콘솔 컨트롤러에는 반영되지 않았다. 폼 파라미터를 그대로
-`Integer.valueOf`/`new BigDecimal`/`ProductType.valueOf`로 파싱 시도하고 실패하면 `catch`로
-조용히 무시하는 동일한 패턴이 남아 있다(`web/ConsoleProductController.java` `update` 메서드).
-
-T-5의 인수 조건/인수 테스트는 `PUT /admin/products/{id}`만 다뤄 이 콘솔 경로는 범위 밖이다.
-이 컨트롤러는 JSON이 아니라 폼 제출 → redirect + flash 메시지 흐름이라, 거부 시 400 대신
-어떤 방식으로 사용자에게 알려야 하는지(현재 폼 에러 표시 관례가 이 저장소에 없음)는
-요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
-
-필요: 콘솔 폼에서 검증 실패를 어떻게 보여줄지(리다이렉트 시 flash 에러 메시지, 폼 재표시 등)
-정책을 정한 뒤, `ConsoleProductController.update`에도 T-5와 같은 검증을 반영할지 결정한다.
-
----
-
