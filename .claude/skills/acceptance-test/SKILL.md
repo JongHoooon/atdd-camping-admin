@@ -17,6 +17,13 @@ argument-hint: <티켓 ID> [테스트로 옮길 규칙]
 
 ## 0. 입력 확인
 
+아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
+끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+
+```bash
+mkdir -p .claude/gate && jq -n --arg s "acceptance-test" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+```
+
 인자로 티켓 ID(`T-n`)를 받는다.
 
 - `docs/acceptance-criteria.md`에 해당 `# T-n 인수 조건` 블록이 없으면, 1단계
@@ -152,6 +159,13 @@ class <요구사항 주제를 서술하는 영문 이름>AcceptanceTest {
 
 새/수정된 테스트 클래스를 실행해(명령은 `docs/plan.md`의 "이 저장소의 실행 방법" 중 "특정
 테스트 클래스만 실행"), 라벨별 기대 결과와 실제 결과가 일치하면 완료다.
+
+테스트를 실행했으면(결과의 통과/실패와 무관하게) 아래 명령으로 실제로 돌렸다는 사실을
+`.claude/gate/state.json`에 기록한다:
+
+```bash
+jq -n --arg s "acceptance-test" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+```
 
 결과를 못 읽으면 라벨과 상관없이 완료로 치지 않는다(`docs/principles.md` "확인이 안 되면
 통과가 아니다").

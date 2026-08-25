@@ -27,6 +27,13 @@ Agent 도구로 이 스킬 호출을 위임한 경우). 이미 서브에이전�
 그 서브에이전트가 반환한 결과(마무리 보고 내용, 커밋 해시)를 그대로 넘겨받아 사용자에게 전달하고,
 이 세션은 직접 1~5단계를 수행하지 않는다.
 
+아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
+끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+
+```bash
+mkdir -p .claude/gate && jq -n --arg s "verdict" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+```
+
 인자로 티켓 ID(`T-n`)를 받는다.
 
 - `git status`, `git diff`로 지금 작업 트리에 커밋 안 된 변경이 있는지 확인한다. `src/main/java`
@@ -57,6 +64,11 @@ Agent 도구로 이 스킬 호출을 위임한 경우). 이미 서브에이전�
 - 2단계에서 짚은 요구사항 불일치나 중복 지점 누락이 없어야 완료다 — 하나라도 남아 있으면
   여기서 멈추고 사용자에게 알린다.
 - 전체 스위트를 돌린다 — 실행 명령은 `docs/plan.md`의 "이 저장소의 실행 방법"을 따른다.
+- 전체 스위트를 실행했으면(결과와 무관하게) 아래 명령으로 실제로 돌렸다는 사실을
+  `.claude/gate/state.json`에 기록한다:
+  ```bash
+  jq -n --arg s "verdict" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+  ```
 - 결과를 못 읽으면 완료로 치지 않고 멈춘다(`docs/principles.md` "확인이 안 되면 통과가 아니다").
 - **명령 출력에서 결과 요약 줄(`BUILD SUCCESSFUL`/`BUILD FAILED`, `n tests completed, m failed` 등)과
   실패 테스트가 있다면 그 클래스/메서드명을 그대로 옮겨 적어 둔다 — 이 인용은 6단계 보고에 그대로

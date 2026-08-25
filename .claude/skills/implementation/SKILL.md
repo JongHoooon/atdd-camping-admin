@@ -16,6 +16,13 @@ argument-hint: <티켓 ID> [고칠 테스트 클래스/메서드]
 
 ## 0. 입력 확인
 
+아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록한다 — Stop 훅이 이 스킬이
+끝나는 시점에 테스트를 실제로 돌렸는지 확인하는 데 쓴다:
+
+```bash
+mkdir -p .claude/gate && jq -n --arg s "implementation" '{current_skill:$s, tests_verified:false}' > .claude/gate/state.json
+```
+
 인자로 티켓 ID(`T-n`)를 받는다.
 
 - 이 티켓에 대응하는 실패하는 인수 테스트가 이미 있는지 테스트 소스 루트에서 확인한다(Javadoc의
@@ -58,6 +65,13 @@ argument-hint: <티켓 ID> [고칠 테스트 클래스/메서드]
 
 방금 고친 테스트 클래스를 다시 실행해(명령은 0단계와 같다, `docs/plan.md`의 "특정 테스트
 클래스만 실행"), 대상 테스트가 전부 통과하고 관련된 기존 테스트가 회귀 없이 통과하면 완료다.
+
+테스트를 실행했으면(결과와 무관하게) 아래 명령으로 실제로 돌렸다는 사실을
+`.claude/gate/state.json`에 기록한다:
+
+```bash
+jq -n --arg s "implementation" '{current_skill:$s, tests_verified:true}' > .claude/gate/state.json
+```
 
 - 결과를 못 읽으면 완료로 치지 않고 멈춘다(`docs/principles.md` "확인이 안 되면 통과가 아니다").
 - 실패하던 메서드가 전부 통과해야 완료다. 여전히 실패하면 원인을 다시 짚는다 — assert를

@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./gradlew test --rerun-tasks >/dev/null 2>&1; C=$?; [ $C -eq 0 ] && S=PASS || S=\"FAIL(exit $C)\"; jq -cn --arg m \"[Stop 훅] 테스트 재실행 결과: $S\" '{hookSpecificOutput:{additionalContext:$m,systemMessage:$m}}'",
-            "timeout": 600
+            "command": "if [ -f .claude/gate/state.json ]; then SKILL=$(jq -r '.current_skill // empty' .claude/gate/state.json 2>/dev/null); VERIFIED=$(jq -r '.tests_verified // false' .claude/gate/state.json 2>/dev/null); else SKILL=\"\"; fi; if [ -n \"$SKILL\" ]; then if [ \"$VERIFIED\" = \"true\" ]; then M=\"[Stop 훅] '$SKILL' 스킬 종료 — 테스트 실행 기록 확인됨\"; else M=\"[Stop 훅] 경고: '$SKILL' 스킬이 테스트 실행 기록 없이 끝나려 합니다. 실제로 테스트를 돌렸는지 확인하세요 (스킬이 끝난 게 아니라 중간에 질문하려고 멈춘 경우라면 무시해도 됩니다).\"; fi; echo '{}' > .claude/gate/state.json; jq -cn --arg m \"$M\" '{hookSpecificOutput:{hookEventName:\"Stop\", additionalContext:$m}}'; fi",
+            "timeout": 15
           }
         ]
       }
