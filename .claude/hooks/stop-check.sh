@@ -49,8 +49,12 @@ if [ -n "$SKILL" ]; then
   if [ -n "$TEST_PART" ]; then M="$M — $TEST_PART"; fi
   if [ -n "$ROT_PART" ]; then M="$M. $ROT_PART"; fi
 
-  # 5) 다음 턴에 영향 안 주도록 state.json을 항상 초기화한 뒤, additionalContext로만 출력한다
-  #    (systemMessage는 쓰지 않는다 — 중복 노출 방지). exit 2를 쓰지 않으므로 종료를 막지 않는다.
-  echo '{}' > .claude/gate/state.json
+  # 5) completed=true일 때만 state.json을 초기화한다 — 정말 끝난 실행만 다음 턴에 영향을
+  #    안 주도록 지운다. completed=false면(회색지대 등으로 턴이 끊긴 채 다음 턴에서 같은
+  #    스킬을 이어갈 수 있으므로) current_skill/rotations_baseline 등을 그대로 남겨,
+  #    이어지는 턴들에서도 이 훅이 계속 추적할 수 있게 한다.
+  if [ "$COMPLETED" = "true" ]; then
+    echo '{}' > .claude/gate/state.json
+  fi
   jq -cn --arg m "$M" '{hookSpecificOutput:{hookEventName:"Stop", additionalContext:$m}}'
 fi
