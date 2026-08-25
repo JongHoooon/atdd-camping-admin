@@ -147,7 +147,11 @@ def main():
         with open(record_log, "a") as f:
             f.write(f"{timestamp()} HANDOFF {reason_text}\n")
 
-        sys.exit(0)
+        print(
+            f"[게이트] {reason_text} — 한계에 도달해 더 막지 않고 사람에게 넘깁니다.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # 아직 두 한계 다 안 넘었으면: 계속 막는다.
     save_state(state_file, state)
