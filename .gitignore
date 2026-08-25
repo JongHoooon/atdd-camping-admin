@@ -2,6 +2,7 @@
 !.claude/skills/
 !.claude/settings.json
 !.claude/hooks/
+.claude/hooks/__pycache__/
 .gradle/
 .idea/
 build/

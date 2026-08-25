@@ -20,19 +20,25 @@ argument-hint: <티켓 ID> [고칠 테스트 클래스/메서드]
 - **예산 소진**: 컨텍스트/턴 예산이 바닥나 완료 기준에 도달하지 못하고 멈춘다.
 
 **안전망**: 위 판단을 스스로 놓칠 경우를 대비해, 이 스킬에서 `--tests`로 대상 클래스만 돌릴 때마다
-훅이 결과 XML을 읽어 같은 테스트가 3번째로 같은 이유로 실패하거나 이번 구현 시도에서 총 5번째
-실패하면 강제로 개입한다(도구 호출 직후 `exit 2`로 경고를 준다). 이 스킬만 대상이다 —
-`acceptance-test`는 아직 통과 안 하는 게 정상(레드 페이즈)이라 실패를 세면 오탐이 나서 제외한다.
-이 안전망이 발동하면 위 "맴돌다 끊김"으로 간주하고 그대로 따른다.
+훅(`.claude/hooks/failure_gate.py`)이 결과 XML을 읽어 실패한 테스트 이름별로 횟수를 센다.
+**아직 한계(같은 이름 3번, 총 5번) 안이면 실패할 때마다 매번 `exit 2`로 막고 이름과 지금 몇
+번째인지 표준 오류로 알린다** — 그 자리에서 바로 인지하고 계속 진행하면 된다. **한계를
+넘으면 더 이상 막지 않고 `exit 0`으로 조용히 끝나 사람에게 넘긴다** — 이때는 위 "맴돌다
+끊김"이 발동한 것으로 간주하고 그대로 따른다. 막힌 시도/넘긴 시도/(전부 통과한) 시도 모두
+훅이 `docs/rotations.md`에 한 줄씩 자동으로 남기므로(막힘/넘김/통과), 넘김이 발동해도
+스킬(Claude)이 별도로 `docs/rotations.md`에 다시 남길 필요는 없다 — 이미 훅이 남겼다.
+이 스킬만 대상이다 — `acceptance-test`는 아직 통과 안 하는 게 정상(레드 페이즈)이라 실패를
+세면 오탐이 나서 제외한다.
 
 ## 0. 입력 확인
 
 아래 명령으로 `.claude/gate/state.json`에 이 스킬이 시작됐음을 기록하고, `.claude/gate/failures.json`의
 실패 카운터를 초기화한다 — Stop 훅은 테스트 실행 여부와 `docs/rotations.md` 기록 여부를,
-안전망 훅은 같은 테스트 반복 실패 횟수를 이 파일들로 추적한다:
+안전망 훅은 같은 테스트 반복 실패 횟수와 진행 기록을 이 파일들로 추적한다(`$1`은 이 스킬을
+부를 때 받은 티켓 ID다):
 
 ```bash
-mkdir -p .claude/gate && jq -n --arg s "implementation" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, completed:false, tests_verified:false, rotations_baseline:$rb}' > .claude/gate/state.json
+mkdir -p .claude/gate && jq -n --arg s "implementation" --arg t "$1" --argjson rb "$(wc -l < docs/rotations.md | tr -d ' ')" '{current_skill:$s, ticket:$t, completed:false, tests_verified:false, rotations_baseline:$rb}' > .claude/gate/state.json
 echo '{"by_name":{},"total":0}' > .claude/gate/failures.json
 ```
 
