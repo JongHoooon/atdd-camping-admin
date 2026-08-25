@@ -104,7 +104,7 @@ public class ProductAdminController {
     }
 
     @PutMapping("/{productId}")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<?> updateProduct(
             @PathVariable Long productId,
             @RequestBody Map<String, Object> body) {
         Product product = productRepository.findById(productId)
@@ -114,28 +114,50 @@ public class ProductAdminController {
             if (body.containsKey("name")) {
                 Object v = body.get("name");
                 if (v != null) {
-                    product.setName(v.toString());
+                    String name = v.toString();
+                    if (name.isBlank()) {
+                        return badRequest("상품명은 공백이거나 빈 문자열일 수 없습니다.");
+                    }
+                    product.setName(name);
                 }
             }
             if (body.containsKey("stockQuantity")) {
                 Object v = body.get("stockQuantity");
                 if (v instanceof Number) {
-                    product.setStockQuantity(((Number) v).intValue());
+                    int newStockQuantity = ((Number) v).intValue();
+                    if (newStockQuantity < 0) {
+                        return badRequest("재고 수량은 음수일 수 없습니다.");
+                    }
+                    product.setStockQuantity(newStockQuantity);
                 } else if (v != null) {
                     try {
-                        product.setStockQuantity(Integer.valueOf(v.toString()));
-                    } catch (Exception ignore) {
+                        int newStockQuantity = Integer.valueOf(v.toString());
+                        if (newStockQuantity < 0) {
+                            return badRequest("재고 수량은 음수일 수 없습니다.");
+                        }
+                        product.setStockQuantity(newStockQuantity);
+                    } catch (NumberFormatException e) {
+                        return badRequest("재고 수량은 숫자여야 합니다: " + v);
                     }
                 }
             }
             if (body.containsKey("price")) {
                 Object v = body.get("price");
                 if (v instanceof Number) {
-                    product.setPrice(new BigDecimal(((Number) v).toString()));
+                    BigDecimal newPrice = new BigDecimal(((Number) v).toString());
+                    if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
+                        return badRequest("가격은 음수일 수 없습니다.");
+                    }
+                    product.setPrice(newPrice);
                 } else if (v != null) {
                     try {
-                        product.setPrice(new BigDecimal(v.toString()));
-                    } catch (Exception ignore) {
+                        BigDecimal newPrice = new BigDecimal(v.toString());
+                        if (newPrice.compareTo(BigDecimal.ZERO) < 0) {
+                            return badRequest("가격은 음수일 수 없습니다.");
+                        }
+                        product.setPrice(newPrice);
+                    } catch (NumberFormatException e) {
+                        return badRequest("가격은 숫자여야 합니다: " + v);
                     }
                 }
             }
@@ -144,7 +166,8 @@ public class ProductAdminController {
                 if (v != null) {
                     try {
                         product.setProductType(ProductType.valueOf(v.toString()));
-                    } catch (Exception ignore) {
+                    } catch (IllegalArgumentException e) {
+                        return badRequest("정의되지 않은 상품 유형입니다: " + v);
                     }
                 }
             }
@@ -152,5 +175,9 @@ public class ProductAdminController {
 
         Product saved = productRepository.save(product);
         return ResponseEntity.ok(saved);
+    }
+
+    private ResponseEntity<Map<String, String>> badRequest(String message) {
+        return new ResponseEntity<>(Map.of("error", message), HttpStatus.BAD_REQUEST);
     }
 }
