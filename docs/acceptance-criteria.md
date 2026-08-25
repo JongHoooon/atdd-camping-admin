@@ -136,3 +136,62 @@ When   같은 상태 변경 후 같은 범위로 기간 상세내역(entries) �
 
 ---
 
+# T-5 인수 조건
+
+"PUT /admin/products/{id}는 필드값에 대한 검증이 전혀 없다."
+
+요구사항: 상품 수정 시 (1) 상품명은 공백/빈 문자열이면 거부, (2) 재고 수량은 음수면 거부(0은
+허용), (3) 가격은 음수면 거부(0은 허용), (4) 파싱 불가능한 값이나 정의되지 않은 상품 유형은
+조용히 무시하지 않고 명시적으로 거부한다. 네 경우 모두 400 Bad Request와 어떤 필드가 왜
+거부됐는지 알 수 있는 에러 메시지를 응답한다(사용자 확인, 2026-08-25 — 이 저장소에 기존
+에러 응답 형식 관례가 없어 새로 정함, `ReservationAdminController.java:52`가 잘못된 요청에
+400을 쓰는 선례와 일치시킴).
+
+```
+규칙   상품명을 공백이나 빈 문자열로 수정하면 거부해야 한다.
+이유   상품명이 비어 있으면 목록·영수증 등 화면에 표시할 값이 없어 관리자가 상품을 식별할 수
+       없다(controller/ProductAdminController.java:114-119).
+
+Given  새로 등록한 상품(name=T5테스트랜턴, stockQuantity=20, price=30000, productType=RENTAL)
+When   이름을 빈 문자열("")로 수정     Then  (버그) 200, name=""로 그대로 반영 → 기대 400, 에러 메시지
+When   이름을 공백("   ")으로 수정     Then  (버그) 200, name="   "로 그대로 반영 → 기대 400, 에러 메시지
+When   이름을 한 글자("A")로 수정      Then  200, name="A" 반영 (정상, 회귀 방지)
+```
+
+```
+규칙   재고 수량을 음수로 수정하면 거부해야 한다.
+이유   재고가 음수면 실제로 없는 수량을 판매/대여 가능한 것처럼 계산해 재고 관리가 무너진다
+       (controller/ProductAdminController.java:120-130).
+
+Given  새로 등록한 상품(name=T5테스트랜턴, stockQuantity=20, price=30000, productType=RENTAL)
+When   재고를 0으로 수정   Then  200, stockQuantity=0 반영 (정상, 회귀 방지)
+When   재고를 -1로 수정   Then  (버그) 200, stockQuantity=-1로 그대로 반영 → 기대 400, 에러 메시지
+```
+
+```
+규칙   가격을 음수로 수정하면 거부해야 한다.
+이유   가격이 음수면 결제·매출 계산에서 마이너스 금액이 발생해 매출 리포트가 왜곡된다
+       (controller/ProductAdminController.java:131-141).
+
+Given  새로 등록한 상품(name=T5테스트랜턴, stockQuantity=20, price=30000, productType=RENTAL)
+When   가격을 0으로 수정   Then  200, price=0 반영 (정상, 회귀 방지)
+When   가격을 -1로 수정   Then  (버그) 200, price=-1로 그대로 반영 → 기대 400, 에러 메시지
+```
+
+```
+규칙   숫자로 해석할 수 없는 값이나 정의되지 않은 상품 유형으로 수정하면 거부해야 한다.
+이유   지금은 오류 없이 해당 필드만 조용히 안 바뀌고 200을 반환해, 요청이 실패했는지 클라이언트가
+       알 방법이 없다(controller/ProductAdminController.java:120-130, 131-141, 142-150 모두
+       숫자·enum 파싱 실패를 catch로 조용히 무시하는 동일 패턴).
+
+Given  새로 등록한 상품(name=T5테스트랜턴, stockQuantity=20, price=30000, productType=RENTAL)
+When   재고를 숫자로 해석할 수 없는 문자열("abc")로 수정   Then  (버그) 200, 필드 변경 없이 조용히
+       무시됨 → 기대 400, 에러 메시지
+When   가격을 숫자로 해석할 수 없는 문자열("abc")로 수정   Then  (버그) 200, 필드 변경 없이 조용히
+       무시됨 → 기대 400, 에러 메시지
+When   상품 유형을 정의되지 않은 값("FOO")으로 수정        Then  (버그) 200, 필드 변경 없이 조용히
+       무시됨 → 기대 400, 에러 메시지
+```
+
+---
+
