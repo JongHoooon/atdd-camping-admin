@@ -222,4 +222,262 @@ class ProductUpdateAcceptanceTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("T-5: 상품 정보를 수정할 때 요청에 포함된 값이 무효하면 그 필드를 반영하지 않고 400을 반환해야 한다")
+    class T5_상품_수정_시_무효한_값은_거부되어야_한다 {
+
+        @Nested
+        @DisplayName("상품 수정")
+        class 상품_수정 {
+
+            @Test
+            @DisplayName("재고를 음수로 수정하면 거부되고 재고는 그대로 유지된다")
+            void 재고를_음수로_수정하면_거부되고_재고는_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "stockQuantity": -1
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                int reloadedStockQuantity = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getInt("find { it.id == %d }.stockQuantity".formatted(productId));
+
+                assertThat(reloadedStockQuantity).isEqualTo(20);
+            }
+
+            @Test
+            @DisplayName("재고를 0으로 수정하면 반영된다")
+            void 재고를_0으로_수정하면_반영된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "stockQuantity": 0
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .body("stockQuantity", equalTo(0));
+            }
+
+            @Test
+            @DisplayName("가격을 음수로 수정하면 거부되고 가격은 그대로 유지된다")
+            void 가격을_음수로_수정하면_거부되고_가격은_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "price": -1
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                float reloadedPrice = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("find { it.id == %d }.price".formatted(productId));
+
+                assertThat(reloadedPrice).isEqualTo(30000f);
+            }
+
+            @Test
+            @DisplayName("가격을 0으로 수정하면 반영된다")
+            void 가격을_0으로_수정하면_반영된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "price": 0
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .body("price", equalTo(0));
+            }
+
+            @Test
+            @DisplayName("이름을 빈 문자열로 수정하면 거부되고 이름은 그대로 유지된다")
+            void 이름을_빈_문자열로_수정하면_거부되고_이름은_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "name": ""
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                String reloadedName = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getString("find { it.id == %d }.name".formatted(productId));
+
+                assertThat(reloadedName).isEqualTo("T5검증상품");
+            }
+
+            @Test
+            @DisplayName("정의되지 않은 유형으로 수정하면 거부되고 유형은 그대로 유지된다")
+            void 정의되지_않은_유형으로_수정하면_거부되고_유형은_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "productType": "FOO"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                String reloadedProductType = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getString("find { it.id == %d }.productType".formatted(productId));
+
+                assertThat(reloadedProductType).isEqualTo("RENTAL");
+            }
+
+            @Test
+            @DisplayName("숫자로 파싱할 수 없는 재고 값으로 수정하면 거부되고 재고는 그대로 유지된다")
+            void 숫자로_파싱할_수_없는_재고_값으로_수정하면_거부되고_재고는_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "stockQuantity": "abc"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                int reloadedStockQuantity = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getInt("find { it.id == %d }.stockQuantity".formatted(productId));
+
+                assertThat(reloadedStockQuantity).isEqualTo(20);
+            }
+
+            @Test
+            @DisplayName("숫자로 파싱할 수 없는 가격 값으로 수정하면 거부되고 가격은 그대로 유지된다")
+            void 숫자로_파싱할_수_없는_가격_값으로_수정하면_거부되고_가격은_그대로_유지된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "price": "abc"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                float reloadedPrice = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("find { it.id == %d }.price".formatted(productId));
+
+                assertThat(reloadedPrice).isEqualTo(30000f);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("T-5: 한 요청에 유효한 필드와 무효한 필드가 함께 있으면, 유효한 필드도 반영하지 않고 요청 전체를 거부해야 한다")
+    class T5_유효한_필드와_무효한_필드가_함께_있으면_전체_거부되어야_한다 {
+
+        @Nested
+        @DisplayName("상품 수정")
+        class 상품_수정 {
+
+            @Test
+            @DisplayName("유효한 이름과 무효한 재고를 함께 수정하면 이름도 반영되지 않는다")
+            void 유효한_이름과_무효한_재고를_함께_수정하면_이름도_반영되지_않는다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "name": "새이름",
+                                  "stockQuantity": -5
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400);
+
+                var reloaded = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract();
+
+                assertThat(reloaded.jsonPath().getString("find { it.id == %d }.name".formatted(productId)))
+                        .isEqualTo("T5검증상품");
+                assertThat(reloaded.jsonPath().getInt("find { it.id == %d }.stockQuantity".formatted(productId)))
+                        .isEqualTo(20);
+            }
+
+            @Test
+            @DisplayName("모든 필드를 유효한 값으로 함께 수정하면 반영된다")
+            void 모든_필드를_유효한_값으로_함께_수정하면_반영된다() {
+                Long productId = createProduct("T5검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "name": "업데이트랜턴",
+                                  "stockQuantity": 50,
+                                  "price": 45000,
+                                  "productType": "SALE"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .body("name", equalTo("업데이트랜턴"))
+                        .body("stockQuantity", equalTo(50))
+                        .body("productType", equalTo("SALE"));
+            }
+        }
+    }
 }
