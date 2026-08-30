@@ -119,8 +119,10 @@ public class ProductAdminController {
                     }
                 } else if (v != null) {
                     try {
-                        Integer.valueOf(v.toString());
-                    } catch (Exception e) {
+                        if (Integer.valueOf(v.toString()) < 0) {
+                            return badRequest("stockQuantity는 0 이상이어야 합니다");
+                        }
+                    } catch (NumberFormatException e) {
                         return badRequest("stockQuantity는 숫자여야 합니다");
                     }
                 }
@@ -133,8 +135,10 @@ public class ProductAdminController {
                     }
                 } else if (v != null) {
                     try {
-                        new BigDecimal(v.toString());
-                    } catch (Exception e) {
+                        if (new BigDecimal(v.toString()).compareTo(BigDecimal.ZERO) < 0) {
+                            return badRequest("price는 0 이상이어야 합니다");
+                        }
+                    } catch (NumberFormatException e) {
                         return badRequest("price는 숫자여야 합니다");
                     }
                 }

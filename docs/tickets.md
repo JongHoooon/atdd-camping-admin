@@ -150,3 +150,19 @@ REJECTED/CHECKED_IN/CHECKED_OUT/CANCELLED enum이 정의돼 있지만, `Reservat
 
 ---
 
+T-13 상품 수정 웹 콘솔 화면에 T-5 검증이 전혀 적용되지 않음
+
+내용: T-5 작업(문자열 형태의 음수 재고/가격이 JSON API 검증을 우회하는 버그를 고치던 중)
+확인. `ConsoleProductController.update`(web/ConsoleProductController.java:76-103)는
+`ProductAdminController.updateProduct`와 같은 "상품 수정" 정책을 다루는 병렬 경로(CLAUDE.md가
+명시한 의도된 중복)인데, T-5가 JSON API 쪽에만 적용되고 이 경로에는 검증이 전혀 구현돼 있지
+않다. 음수 재고/가격, 빈 이름, 정의되지 않은 유형, 파싱 불가능한 값 모두 에러 없이 조용히
+무시되거나(파싱 실패) 그대로 저장된다(성공 케이스). 웹 콘솔 화면에도 같은 검증 정책을
+적용해야 하는지, 적용한다면 400 JSON 대신 이 경로의 관례(폼 리다이렉트 + flash 메시지)로
+표현해야 하는지는 요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
+
+필요: 웹 콘솔 수정 화면에도 값 검증을 적용할지 정책을 정한다. 적용한다면 거부 시 사용자에게
+보여줄 방식(현재 폼 리다이렉트+flash 관례를 따를지, 다른 방식을 쓸지)도 함께 정한다.
+
+---
+

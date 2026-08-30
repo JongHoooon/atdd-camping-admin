@@ -245,7 +245,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("stockQuantity는 0 이상이어야 합니다"));
 
                 int reloadedStockQuantity = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -288,7 +289,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("price는 0 이상이어야 합니다"));
 
                 float reloadedPrice = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -331,7 +333,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("name은 빈 문자열일 수 없습니다"));
 
                 String reloadedName = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -356,7 +359,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("productType은 정의된 값이어야 합니다"));
 
                 String reloadedProductType = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -381,7 +385,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("stockQuantity는 숫자여야 합니다"));
 
                 int reloadedStockQuantity = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -406,7 +411,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("price는 숫자여야 합니다"));
 
                 float reloadedPrice = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -442,7 +448,8 @@ class ProductUpdateAcceptanceTest {
                                 }
                                 """)
                         .when().put("/admin/products/{id}", productId)
-                        .then().statusCode(400);
+                        .then().statusCode(400)
+                        .body("error", equalTo("stockQuantity는 0 이상이어야 합니다"));
 
                 var reloaded = given()
                         .header("Authorization", "Bearer " + accessToken)
@@ -477,6 +484,134 @@ class ProductUpdateAcceptanceTest {
                         .body("name", equalTo("업데이트랜턴"))
                         .body("stockQuantity", equalTo(50))
                         .body("productType", equalTo("SALE"));
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("T-5: 재고·가격이 문자열 형태의 음수로 전달되더라도 숫자로 전달했을 때와 동일하게 거부해야 한다")
+    class T5_문자열_형태의_음수_재고_가격도_거부되어야_한다 {
+
+        @Nested
+        @DisplayName("상품 수정")
+        class 상품_수정 {
+
+            @Test
+            @DisplayName("재고를 문자열 음수로 수정하면 거부되고 재고는 그대로 유지된다")
+            void 재고를_문자열_음수로_수정하면_거부되고_재고는_그대로_유지된다() {
+                Long productId = createProduct("T5문자열검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "stockQuantity": "-1"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400)
+                        .body("error", equalTo("stockQuantity는 0 이상이어야 합니다"));
+
+                int reloadedStockQuantity = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getInt("find { it.id == %d }.stockQuantity".formatted(productId));
+
+                assertThat(reloadedStockQuantity).isEqualTo(20);
+            }
+
+            @Test
+            @DisplayName("재고를 문자열 \"0\"으로 수정하면 반영된다")
+            void 재고를_문자열_0으로_수정하면_반영된다() {
+                Long productId = createProduct("T5문자열검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "stockQuantity": "0"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .body("stockQuantity", equalTo(0));
+            }
+
+            @Test
+            @DisplayName("가격을 문자열 음수로 수정하면 거부되고 가격은 그대로 유지된다")
+            void 가격을_문자열_음수로_수정하면_거부되고_가격은_그대로_유지된다() {
+                Long productId = createProduct("T5문자열검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "price": "-1"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400)
+                        .body("error", equalTo("price는 0 이상이어야 합니다"));
+
+                float reloadedPrice = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("find { it.id == %d }.price".formatted(productId));
+
+                assertThat(reloadedPrice).isEqualTo(30000f);
+            }
+
+            @Test
+            @DisplayName("가격을 문자열 \"0\"으로 수정하면 반영된다")
+            void 가격을_문자열_0으로_수정하면_반영된다() {
+                Long productId = createProduct("T5문자열검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "price": "0"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(200)
+                        .body("price", equalTo(0));
+            }
+
+            @Test
+            @DisplayName("유효한 이름과 문자열 형태의 무효한 재고를 함께 수정하면 이름도 반영되지 않는다")
+            void 유효한_이름과_문자열_형태의_무효한_재고를_함께_수정하면_이름도_반영되지_않는다() {
+                Long productId = createProduct("T5문자열검증상품", 20, 30000, "RENTAL");
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .contentType(ContentType.JSON)
+                        .body("""
+                                {
+                                  "name": "새이름2",
+                                  "stockQuantity": "-5"
+                                }
+                                """)
+                        .when().put("/admin/products/{id}", productId)
+                        .then().statusCode(400)
+                        .body("error", equalTo("stockQuantity는 0 이상이어야 합니다"));
+
+                var reloaded = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .when().get("/admin/products")
+                        .then().statusCode(200)
+                        .extract();
+
+                assertThat(reloaded.jsonPath().getString("find { it.id == %d }.name".formatted(productId)))
+                        .isEqualTo("T5문자열검증상품");
+                assertThat(reloaded.jsonPath().getInt("find { it.id == %d }.stockQuantity".formatted(productId)))
+                        .isEqualTo(20);
             }
         }
     }
