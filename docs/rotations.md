@@ -49,3 +49,4 @@
 00:18 T-5 implementation: 넘김 — com.camping.admin.acceptance.ProductUpdateAcceptanceTest$T5_상품_수정_시_무효한_값은_거부되어야_한다$상품_수정#숫자로 파싱할 수 없는 재고 값으로 수정하면 거부되고 재고는 그대로 유지된다 이(가) 3번째로 같은 이유로 실패; com.camping.admin.acceptance.ProductUpdateAcceptanceTest$T5_상품_수정_시_무효한_값은_거부되어야_한다$상품_수정#숫자로 파싱할 수 없는 가격 값으로 수정하면 거부되고 가격은 그대로 유지된다 이(가) 3번째로 같은 이유로 실패; com.camping.admin.acceptance.ProductUpdateAcceptanceTest$T5_상품_수정_시_무효한_값은_거부되어야_한다$상품_수정#정의되지 않은 유형으로 수정하면 거부되고 유형은 그대로 유지된다 이(가) 3번째로 같은 이유로 실패
 00:19 T-5 implementation: 통과 — 15개 테스트 전체 통과
 00:19 T-5 implementation: 통과 — 10개 테스트 전체 통과
+13:29 T-8 acceptance-criteria: 회색지대 — data.sql 시드 예약 12건을 다시 확인해 reservation_date/created_at 오프셋이 모두 일치함을 재확인. T-8 문구를 수정할 근거는 못 찾았고, 사용자가 놓친 관점이 있는지 확인 질문을 던진 채로 응답을 마쳐 다음 판단(문구 유지 vs 다른 관점 반영)이 사용자에게 넘어간 상태.
