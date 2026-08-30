@@ -410,6 +410,177 @@ class RevenueReportAcceptanceTest {
     }
 
     @Nested
+    @DisplayName("T-2: 대여·판매 거래는 상품 가격이 나중에 바뀌어도 그 거래가 집계되는 날짜가 거래 발생 시점 그대로 유지되어야 한다")
+    class T2_거래_집계_날짜는_가격_변경과_무관하게_유지되어야_한다 {
+
+        @Nested
+        @DisplayName("기간 상세내역 조회")
+        class 기간_상세내역_조회 {
+
+            @Test
+            @DisplayName("상품 가격이 바뀌어도 대여·판매 거래의 상세내역 날짜와 금액은 거래 발생 시점 그대로 유지된다")
+            void 상품_가격이_바뀌어도_대여_판매_거래의_상세내역_날짜와_금액은_거래_발생_시점_그대로_유지된다() {
+                LocalDate today = LocalDate.now();
+
+                Long rentalProductId = createProduct("T2날짜대여상품", 20, 30000, "RENTAL");
+                createWalkInRental(rentalProductId, 1);
+                createWalkInRental(rentalProductId, 1);
+                Long saleProductId = createProduct("T2날짜판매상품", 50, 2500, "SALE");
+                createSale(saleProductId, 1);
+
+                updateProductPrice(rentalProductId, 99000);
+                updateProductPrice(saleProductId, 9999);
+
+                List<Float> rentalAmounts = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range/entries")
+                        .then().statusCode(200)
+                        .extract().jsonPath()
+                        .getList("findAll { it.title == 'T2날짜대여상품' }.amount", Float.class);
+                List<String> rentalDates = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range/entries")
+                        .then().statusCode(200)
+                        .extract().jsonPath()
+                        .getList("findAll { it.title == 'T2날짜대여상품' }.occurredAt", String.class);
+                List<Float> saleAmounts = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range/entries")
+                        .then().statusCode(200)
+                        .extract().jsonPath()
+                        .getList("findAll { it.title == 'T2날짜판매상품 외' }.amount", Float.class);
+                List<String> saleDates = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range/entries")
+                        .then().statusCode(200)
+                        .extract().jsonPath()
+                        .getList("findAll { it.title == 'T2날짜판매상품 외' }.occurredAt", String.class);
+
+                assertThat(rentalAmounts).containsExactlyInAnyOrder(30000f, 30000f);
+                assertThat(rentalDates).allMatch(occurredAt -> occurredAt.startsWith(today.toString()));
+                assertThat(saleAmounts).containsExactly(2500f);
+                assertThat(saleDates).allMatch(occurredAt -> occurredAt.startsWith(today.toString()));
+            }
+        }
+
+        @Nested
+        @DisplayName("일별 리포트 조회")
+        class 일별_리포트_조회 {
+
+            @Test
+            @DisplayName("상품 가격이 바뀌어도 일별 리포트에 반영된 이 거래들의 매출은 거래 발생 시점 금액 그대로 유지된다")
+            void 상품_가격이_바뀌어도_일별_리포트에_반영된_이_거래들의_매출은_거래_발생_시점_금액_그대로_유지된다() {
+                LocalDate today = LocalDate.now();
+
+                float rentalBaseline = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("date", today.toString())
+                        .when().get("/admin/reports/revenue/daily")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalRentalRevenue");
+                float saleBaseline = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("date", today.toString())
+                        .when().get("/admin/reports/revenue/daily")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalSalesRevenue");
+
+                Long rentalProductId = createProduct("T2일별날짜대여상품", 20, 30000, "RENTAL");
+                createWalkInRental(rentalProductId, 1);
+                createWalkInRental(rentalProductId, 1);
+                Long saleProductId = createProduct("T2일별날짜판매상품", 50, 2500, "SALE");
+                createSale(saleProductId, 1);
+
+                updateProductPrice(rentalProductId, 99000);
+                updateProductPrice(saleProductId, 9999);
+
+                float rentalRevenue = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("date", today.toString())
+                        .when().get("/admin/reports/revenue/daily")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalRentalRevenue");
+                float saleRevenue = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("date", today.toString())
+                        .when().get("/admin/reports/revenue/daily")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalSalesRevenue");
+                assertThat(rentalRevenue - rentalBaseline).isEqualTo(60000f);
+                assertThat(saleRevenue - saleBaseline).isEqualTo(2500f);
+            }
+        }
+
+        @Nested
+        @DisplayName("기간 리포트 조회")
+        class 기간_리포트_조회 {
+
+            @Test
+            @DisplayName("상품 가격이 바뀌어도 기간 리포트의 시작일·종료일과 이 거래들의 매출은 거래 발생 시점 그대로 유지된다")
+            void 상품_가격이_바뀌어도_기간_리포트의_시작일_종료일과_이_거래들의_매출은_거래_발생_시점_그대로_유지된다() {
+                LocalDate today = LocalDate.now();
+
+                float rentalBaseline = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalRentalRevenue");
+                float saleBaseline = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalSalesRevenue");
+
+                Long rentalProductId = createProduct("T2기간날짜대여상품", 20, 30000, "RENTAL");
+                createWalkInRental(rentalProductId, 1);
+                createWalkInRental(rentalProductId, 1);
+                Long saleProductId = createProduct("T2기간날짜판매상품", 50, 2500, "SALE");
+                createSale(saleProductId, 1);
+
+                updateProductPrice(rentalProductId, 99000);
+                updateProductPrice(saleProductId, 9999);
+
+                given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .body("fromDate", org.hamcrest.Matchers.equalTo(today.toString()))
+                        .body("toDate", org.hamcrest.Matchers.equalTo(today.toString()));
+                float rentalRevenue = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalRentalRevenue");
+                float saleRevenue = given()
+                        .header("Authorization", "Bearer " + accessToken)
+                        .queryParam("from", today.toString())
+                        .queryParam("to", today.toString())
+                        .when().get("/admin/reports/revenue/range")
+                        .then().statusCode(200)
+                        .extract().jsonPath().getFloat("totalSalesRevenue");
+                assertThat(rentalRevenue - rentalBaseline).isEqualTo(60000f);
+                assertThat(saleRevenue - saleBaseline).isEqualTo(2500f);
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("T-3: 취소된 예약은 일별 리포트·기간 리포트·기간 상세내역 어디에서도 매출로 집계되지 않아야 한다")
     class T3_취소된_예약은_매출에서_제외되어야_한다 {
 
